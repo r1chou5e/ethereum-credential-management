@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity <=0.8.24;
+pragma solidity <=0.8.25;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 // Uncomment this line to use console.log
@@ -11,8 +11,8 @@ contract Issuers is Ownable {
     event IssuerAdded(address indexed issuer);
     event IssuerRevoked(address indexed issuer);
 
-    constructor(address _owner, address _issuer) Ownable(_owner) {
-        authorizedIssuers[_issuer] = true;
+    constructor() Ownable(msg.sender) {
+        authorizedIssuers[msg.sender] = true;
     }
 
     function addIssuer(address issuer) private onlyOwner {
