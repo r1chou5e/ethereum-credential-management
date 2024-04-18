@@ -30,8 +30,9 @@ contract Certificates {
         address indexed _holder,
         address indexed _issuer,
         string _fileUrl,
-        uint _issueDate,
-        uint _expireDate
+        uint256 _issueDate,
+        uint256 _expireDate,
+        bytes32 _certificateHash
     );
 
     event RevokedCertificate(
@@ -52,10 +53,10 @@ contract Certificates {
         address _holder,
         string memory _fileUrl,
         uint16 _score,
-        uint _expireDate
+        uint256 _expireDate
     ) public onlyIssuer returns (bytes32) {
         bytes32 certificateHash = keccak256(
-            abi.encode(_holder, _fileUrl, _score, _expireDate)
+            abi.encode(_holder, _fileUrl, _score, block.timestamp, _expireDate)
         );
 
         require(
@@ -63,9 +64,10 @@ contract Certificates {
             "Certificate already exists"
         );
 
-        require(!certificates[_holder][certificateHash].isRevoked, "Certificate has been revoked");
-
-        // require(certificates[_holder][certificateHash].expireDate > block.timestamp, "Certificate has been expired");
+        require(
+            !certificates[_holder][certificateHash].isRevoked,
+            "Certificate has been revoked"
+        );
 
         certificates[_holder][certificateHash] = Certificate(
             _holder,
@@ -84,7 +86,8 @@ contract Certificates {
             msg.sender,
             _fileUrl,
             block.timestamp,
-            _expireDate
+            _expireDate,
+            certificateHash
         );
 
         return certificateHash;
@@ -111,8 +114,8 @@ contract Certificates {
         bytes32 _certificateHash
     ) external view returns (bool) {
         return
-            !certificates[_holder][_certificateHash].isRevoked && certificates[_holder][_certificateHash].issueDate > 0;
-           // && certificates[_holder][_certificateHash].expireDate > block.timestamp;
+            !certificates[_holder][_certificateHash].isRevoked &&
+            certificates[_holder][_certificateHash].issueDate > 0;
     }
 
     function getCertificateByHash(

@@ -15,13 +15,13 @@ contract Issuers is Ownable {
         authorizedIssuers[msg.sender] = true;
     }
 
-    function addIssuer(address issuer) private onlyOwner {
+    function addIssuer(address issuer) public onlyOwner {
         require(!authorizedIssuers[issuer], "Issuer already exists");
         authorizedIssuers[issuer] = true;
         emit IssuerAdded(issuer);
     }
 
-    function revokeIssuer(address issuer) private onlyOwner {
+    function revokeIssuer(address issuer) public onlyOwner {
         require(authorizedIssuers[issuer], "Issuer dosn't authorized");
         authorizedIssuers[issuer] = false;
         emit IssuerRevoked(issuer);
