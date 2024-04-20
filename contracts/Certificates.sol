@@ -103,6 +103,7 @@ contract Certificates {
         );
 
         certificates[_holder][_certificateHash].isRevoked = true;
+        certificatesCount[_holder]--;
 
         emit RevokedCertificate(msg.sender, _holder, _certificateHash);
 
