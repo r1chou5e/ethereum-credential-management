@@ -49,6 +49,14 @@ contract Certificates {
         _;
     }
 
+    modifier onlyCertificateIssuer(address _holder, bytes32 _certificateHash) {
+        require(
+            certificates[_holder][_certificateHash].issuer == msg.sender,
+            "Only the issuer of this certificate can call this function"
+        );
+        _;
+    }
+
     function issueCertificate(
         address _holder,
         string memory _fileUrl,
@@ -96,7 +104,12 @@ contract Certificates {
     function revokeCertificate(
         address _holder,
         bytes32 _certificateHash
-    ) external onlyIssuer returns (bool) {
+    )
+        external
+        onlyIssuer
+        onlyCertificateIssuer(_holder, _certificateHash)
+        returns (bool)
+    {
         require(
             certificates[_holder][_certificateHash].holder != address(0),
             "Certificate does not exist"

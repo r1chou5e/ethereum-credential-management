@@ -98,7 +98,9 @@ describe("Certificates", function () {
 
       await expect(
         certificates.connect(addr1).revokeCertificate(holder, nonExistentHash)
-      ).to.be.revertedWith("Certificate does not exist");
+      ).to.be.revertedWith(
+        "Only the issuer of this certificate can call this function"
+      );
     });
   });
 
@@ -171,7 +173,7 @@ describe("Certificates", function () {
       const expireDate2 = Math.floor(Date.now() / 1000) + 3600 + 3600; // Expires in 2 hour
 
       await certificates
-        .connect(addr1)
+        .connect(addr3)
         .issueCertificate(holder, fileUrl2, score2, expireDate2);
 
       const certificatesCount = await certificates.getCertificatesCount(holder);
@@ -186,6 +188,37 @@ describe("Certificates", function () {
         await certificates.getCertificatesCount(holder);
 
       expect(certificatesCountAfterRevocation).to.equal(1);
+    });
+
+    it("Should revert if trying to revoke not owned certificate", async function () {
+      const holder = addr2.address;
+
+      const fileUrl1 = "http://example.com/certificate1.pdf";
+      const score1 = 90;
+      const expireDate1 = Math.floor(Date.now() / 1000) + 3600; // Expires in 1 hour
+
+      await certificates
+        .connect(addr1)
+        .issueCertificate(holder, fileUrl1, score1, expireDate1);
+
+      const event1 = await certificates.queryFilter("CertificateIssued");
+      const certificateHash1 = event1[0].args[5];
+
+      const fileUrl2 = "http://example.com/certificate2.pdf";
+      const score2 = 100;
+      const expireDate2 = Math.floor(Date.now() / 1000) + 3600 + 3600; // Expires in 2 hour
+
+      await certificates
+        .connect(addr3)
+        .issueCertificate(holder, fileUrl2, score2, expireDate2);
+
+      expect(
+        await certificates
+          .connect(addr1)
+          .revokeCertificate(holder, certificateHash1)
+      ).to.be.revertedWith(
+        "Only the issuer of this certificate can call this function"
+      );
     });
   });
 });

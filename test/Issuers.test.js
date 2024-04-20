@@ -12,9 +12,10 @@ describe("Issuers", function () {
   let owner;
   let address1;
   let address2;
+  let address3;
 
   beforeEach(async function () {
-    [owner, address1, address2] = await ethers.getSigners();
+    [owner, address1, address2, address3] = await ethers.getSigners();
     Issuers = await ethers.getContractFactory("Issuers");
     issuers = await Issuers.deploy();
   });
@@ -27,6 +28,8 @@ describe("Issuers", function () {
     await issuers.connect(owner).addIssuer(address1.address);
     expect(await issuers.authorizedIssuers(address1.address)).to.equal(true);
     expect(await issuers.authorizedIssuers(address2.address)).to.equal(false);
+    await issuers.connect(owner).addIssuer(address2.address);
+    expect(await issuers.authorizedIssuers(address2.address)).to.equal(true);
   });
 
   it("Should revoke an issuer", async function () {
