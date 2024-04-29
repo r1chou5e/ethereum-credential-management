@@ -1,7 +1,8 @@
 require("dotenv").config();
 const { Web3 } = require("web3");
+const hre = require("hardhat");
 
-const certificateAbi = [
+const certificatesAbi = [
   {
     inputs: [
       {
@@ -172,15 +173,16 @@ const certificateAbi = [
   },
 ];
 
-const certificatesAddress = process.env.CERTIFICATES_CONTRACT_ADDRESS;
+const certificatesAddress =
+  process.env.ETHSEPOLIA_CERTIFICATES_CONTRACT_ADDRESS;
 const privateKey = process.env.PRIVATE_KEY;
 const publicKey = process.env.PUBLIC_KEY;
 
 async function interact() {
   try {
-    const web3 = await new Web3("https://rpc.sepolia.org");
+    const web3 = await new Web3(hre.config.networks.ethsepolia.url);
     const certificatesContract = new web3.eth.Contract(
-      certificateAbi,
+      certificatesAbi,
       certificatesAddress
     );
 
@@ -239,33 +241,33 @@ async function interact() {
       return count;
     }
 
-    const holder = "0xb2248390842d3C4aCF1D8A893954Afc0EAc586e5";
+    const holder = "0x921481ad4bd28ce58c858e6ecba1768fab5e6d7b";
     const fileUrl = "https://example.com/certificate.pdf";
-    const score = 83;
+    const score = 80;
     const expireDate = Math.floor(Date.now() / 1000) + 3600 * 24 * 365 * 2; // 2 year
 
-    const certificateHash = await issueCertificate(
-      holder,
-      fileUrl,
-      score,
-      expireDate
-    );
-    console.log("Certificate hash:", certificateHash);
+    // const certificateHash = await issueCertificate(
+    //   holder,
+    //   fileUrl,
+    //   score,
+    //   expireDate
+    // );
+    // console.log("Certificate hash:", certificateHash);
 
-    const certificate = await getCertificateByHash(holder, certificateHash);
-    console.log("Certificate retrieved successfully:", certificate);
+    // const certificate = await getCertificateByHash(holder, certificateHash);
+    // console.log("Certificate retrieved successfully:", certificate);
 
-    const count1 = await getCertificatesCount(holder);
-    console.log(`Certificates count of ${holder}: `, count1);
+    // const count1 = await getCertificatesCount(holder);
+    // console.log(`Certificates count of ${holder}: `, count1);
 
     const revokedCertificateHash = await revokeCertificate(
       holder,
-      "0x3987071f0d7dee0e6dfab42e0f36fd004331f3e3810530bfe876c30f2c25a22f"
+      "0xe003696f9ee1028ca093c546f52b92f0ee1fd2b83470addc95cda83013567c6c"
     );
     console.log("Certificate hash:", revokedCertificateHash);
 
-    const count2 = await getCertificatesCount(holder);
-    console.log(`Certificates count of ${holder}: `, count2);
+    // const count2 = await getCertificatesCount(holder);
+    // console.log(`Certificates count of ${holder}: `, count2);
   } catch (error) {
     console.error(error);
   }

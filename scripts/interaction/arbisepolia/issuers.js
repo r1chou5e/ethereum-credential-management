@@ -1,5 +1,6 @@
 require("dotenv").config();
 const { Web3 } = require("web3");
+const hre = require("hardhat");
 
 const issuersAbi = [
   { inputs: [], stateMutability: "nonpayable", type: "constructor" },
@@ -102,13 +103,13 @@ const issuersAbi = [
   },
 ];
 
-const issuersAddress = process.env.ISSUERS_CONTRACT_ADDRESS;
+const issuersAddress = process.env.ARBISEPOLIA_ISSUERS_CONTRACT_ADDRESS;
 const privateKey = process.env.PRIVATE_KEY;
 const publicKey = process.env.PUBLIC_KEY;
 
 async function interact() {
   try {
-    const web3 = await new Web3("https://rpc.sepolia.org");
+    const web3 = await new Web3(hre.config.networks.arbisepolia.url);
     const issuersContract = new web3.eth.Contract(issuersAbi, issuersAddress);
 
     await web3.eth.accounts.wallet.add(privateKey);
@@ -134,13 +135,33 @@ async function interact() {
       console.log("Revoke issuer transaction receipt:", receipt);
     }
 
-    await addIssuer("0xb2248390842d3C4aCF1D8A893954Afc0EAc586e5");
+    async function multipleAddIssuer(addresses) {
+      let batch = new web3.BatchRequest();
+      for (let i = 0; i < addresses.length; i++) {
+        batch.add(
+          issuersContract.methods
+            .addIssuer(addresses[i])
+            .send({ from: publicKey, gasPrice: 10000000000 })
+        );
+      }
+      batch.execute();
+    }
 
-    await checkAuthorizedIssuer("0xb2248390842d3C4aCF1D8A893954Afc0EAc586e5");
+    // await checkAuthorizedIssuer("0x921481ad4bd28ce58c858e6ecba1768fab5e6d7b");
 
-    await revokeIssuer("0xb2248390842d3C4aCF1D8A893954Afc0EAc586e5");
+    await addIssuer("0x2031832e54a2200bf678286f560f49a950db2ad5");
 
-    await checkAuthorizedIssuer("0xb2248390842d3C4aCF1D8A893954Afc0EAc586e5");
+    // await checkAuthorizedIssuer("0xb2248390842d3C4aCF1D8A893954Afc0EAc586e5");
+
+    // await revokeIssuer("0xb2248390842d3C4aCF1D8A893954Afc0EAc586e5");
+
+    // await checkAuthorizedIssuer("0x921481ad4bd28ce58c858e6ecba1768fab5e6d7b");
+
+    // await multipleAddIssuer([
+    //   "0xf663792Be0EdD00AFFB8BBe4Ac6d8185efD5671d",
+    //   "0x2B438781a968e6c30c0E2120e832015dD0808741",
+    //   "0x377716067f8F46348069AD04D6b16De908fE0Af5",
+    // ]);
   } catch (error) {
     console.error(error);
   }
