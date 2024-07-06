@@ -18,6 +18,7 @@ contract Certificates {
     }
 
     Issuers private issuers;
+    address private revocationConsensusContract;
 
     mapping(address => mapping(bytes32 => Certificate)) public certificates;
     mapping(address => uint256) public certificatesCount;
@@ -55,6 +56,20 @@ contract Certificates {
             "Only the issuer of this certificate can call this function"
         );
         _;
+    }
+
+    modifier onlyRevocationConsensus() {
+        require(
+            msg.sender == revocationConsensusContract,
+            "Only the revocation consensus contract can call this function"
+        );
+        _;
+    }
+
+    function setRevocationConsensusContract(
+        address _revocationConsensusContract
+    ) external onlyIssuer {
+        revocationConsensusContract = _revocationConsensusContract;
     }
 
     function issueCertificate(
@@ -104,12 +119,7 @@ contract Certificates {
     function revokeCertificate(
         address _holder,
         bytes32 _certificateHash
-    )
-        external
-        onlyIssuer
-        onlyCertificateIssuer(_holder, _certificateHash)
-        returns (bool)
-    {
+    ) external onlyRevocationConsensus returns (bool) {
         require(
             certificates[_holder][_certificateHash].holder != address(0),
             "Certificate does not exist"
