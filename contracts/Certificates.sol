@@ -2,7 +2,6 @@
 pragma solidity <=0.8.25;
 
 import "./Issuers.sol";
-
 // Uncomment this line to use console.log
 import "hardhat/console.sol";
 
@@ -10,18 +9,16 @@ contract Certificates {
     struct Certificate {
         address holder;
         address issuer;
-        string fileUrl;
-        uint16 score;
+        string ipfsHash;
         uint256 issueDate;
-        uint256 expireDate;
         bool isRevoked;
     }
 
     Issuers private issuers;
     address private revocationConsensusContract;
 
-    mapping(address => mapping(bytes32 => Certificate)) public certificates;
-    mapping(address => uint256) public certificatesCount;
+    mapping(address => mapping(bytes32 => Certificate)) private certificates;
+    mapping(address => uint256) private certificatesCount;
 
     constructor(address _issuerContractAddress) payable {
         issuers = Issuers(_issuerContractAddress);
@@ -30,9 +27,9 @@ contract Certificates {
     event CertificateIssued(
         address indexed _holder,
         address indexed _issuer,
-        string _fileUrl,
+        string _ipfsHash,
+        string _hashInfor,
         uint256 _issueDate,
-        uint256 _expireDate,
         bytes32 _certificateHash
     );
 
@@ -74,12 +71,11 @@ contract Certificates {
 
     function issueCertificate(
         address _holder,
-        string memory _fileUrl,
-        uint16 _score,
-        uint256 _expireDate
+        string memory _ipfsHash,
+        string memory _hashInfor
     ) public onlyIssuer returns (bytes32) {
         bytes32 certificateHash = keccak256(
-            abi.encode(_holder, _fileUrl, _score, block.timestamp, _expireDate)
+            abi.encode(_holder, _ipfsHash, _hashInfor, block.timestamp)
         );
 
         require(
@@ -95,10 +91,8 @@ contract Certificates {
         certificates[_holder][certificateHash] = Certificate(
             _holder,
             msg.sender,
-            _fileUrl,
-            _score,
+            _ipfsHash,
             block.timestamp,
-            _expireDate,
             false
         );
 
@@ -107,9 +101,9 @@ contract Certificates {
         emit CertificateIssued(
             _holder,
             msg.sender,
-            _fileUrl,
+            _ipfsHash,
+            _hashInfor,
             block.timestamp,
-            _expireDate,
             certificateHash
         );
 
