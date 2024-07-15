@@ -9,6 +9,7 @@ contract Certificates {
     struct Certificate {
         address holder;
         address issuer;
+        bytes32 certHash;
         string ipfsHash;
         uint256 issueDate;
         string note;
@@ -95,6 +96,7 @@ contract Certificates {
         certificates[_holder][certificateHash] = Certificate(
             _holder,
             msg.sender,
+            certificateHash,
             _ipfsHash,
             block.timestamp,
             _note,
@@ -118,7 +120,7 @@ contract Certificates {
 
     function revokeCertificate(
         address _holder,
-        bytes32 _certificateHash, 
+        bytes32 _certificateHash,
         string memory _note
     ) external onlyIssuer returns (bool) {
         require(
@@ -128,7 +130,6 @@ contract Certificates {
 
         certificates[_holder][_certificateHash].isRevoked = true;
         certificates[_holder][_certificateHash].note = _note;
-        
         certificatesCount[_holder]--;
 
         emit RevokedCertificate(msg.sender, _holder, _certificateHash, true);
