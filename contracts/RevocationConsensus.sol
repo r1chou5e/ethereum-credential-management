@@ -18,7 +18,8 @@ contract RevocationConsensus is Ownable {
 
     event RevocationRequested(
         address indexed holder,
-        bytes32 indexed certificateHash
+        bytes32 indexed certificateHash,
+        string reason
     );
     event RevocationApproved(
         address indexed member,
@@ -27,7 +28,8 @@ contract RevocationConsensus is Ownable {
     );
     event CertificateRevoked(
         address indexed holder,
-        bytes32 indexed certificateHash
+        bytes32 indexed certificateHash,
+        string reason
     );
 
     modifier onlyMember() {
@@ -57,7 +59,8 @@ contract RevocationConsensus is Ownable {
 
     function requestRevocation(
         address _holder,
-        bytes32 _certificateHash
+        bytes32 _certificateHash,
+        string memory _reason
     ) external onlyMember {
         require(
             certificatesContract.verifyCertificate(_holder, _certificateHash),
@@ -79,13 +82,13 @@ contract RevocationConsensus is Ownable {
         revocation.certificateHash = _certificateHash;
         revocation.approvalCount = 0;
 
-        emit RevocationRequested(_holder, _certificateHash);
+        emit RevocationRequested(_holder, _certificateHash, _reason);
     }
 
     function approveRevocation(
         address _holder,
         bytes32 _certificateHash,
-        string memory _note
+        string memory _reason
     ) external onlyMember {
         bytes32 revocationHash = keccak256(
             abi.encode(_holder, _certificateHash)
@@ -105,8 +108,12 @@ contract RevocationConsensus is Ownable {
         emit RevocationApproved(msg.sender, _holder, _certificateHash);
 
         if (revocation.approvalCount >= members.length / 2) {
-            certificatesContract.revokeCertificate(_holder, _certificateHash, _note);
-            emit CertificateRevoked(_holder, _certificateHash);
+            certificatesContract.revokeCertificate(
+                _holder,
+                _certificateHash,
+                _reason
+            );
+            emit CertificateRevoked(_holder, _certificateHash, _reason);
         }
     }
 }
