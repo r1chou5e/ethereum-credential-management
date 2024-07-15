@@ -11,6 +11,7 @@ contract Certificates {
         address issuer;
         string ipfsHash;
         uint256 issueDate;
+        string note;
         bool isRevoked;
     }
 
@@ -30,13 +31,15 @@ contract Certificates {
         string _ipfsHash,
         string _hashInfor,
         uint256 _issueDate,
+        string _note,
         bytes32 _certificateHash
     );
 
     event RevokedCertificate(
         address indexed _issuer,
         address indexed _holder,
-        bytes32 _certificateHash
+        bytes32 _certificateHash,
+        bool _isRevoked
     );
 
     modifier onlyIssuer() {
@@ -72,10 +75,11 @@ contract Certificates {
     function issueCertificate(
         address _holder,
         string memory _ipfsHash,
-        string memory _hashInfor
+        string memory _hashInfor,
+        string memory _note
     ) public onlyIssuer returns (bytes32) {
         bytes32 certificateHash = keccak256(
-            abi.encode(_holder, _ipfsHash, _hashInfor, block.timestamp)
+            abi.encode(_holder, _ipfsHash, _hashInfor, _note, block.timestamp)
         );
 
         require(
@@ -93,6 +97,7 @@ contract Certificates {
             msg.sender,
             _ipfsHash,
             block.timestamp,
+            _note,
             false
         );
 
@@ -104,6 +109,7 @@ contract Certificates {
             _ipfsHash,
             _hashInfor,
             block.timestamp,
+            _note,
             certificateHash
         );
 
@@ -112,17 +118,20 @@ contract Certificates {
 
     function revokeCertificate(
         address _holder,
-        bytes32 _certificateHash
-    ) external onlyRevocationConsensus returns (bool) {
+        bytes32 _certificateHash, 
+        string memory _note
+    ) external onlyIssuer returns (bool) {
         require(
             certificates[_holder][_certificateHash].holder != address(0),
             "Certificate does not exist"
         );
 
         certificates[_holder][_certificateHash].isRevoked = true;
+        certificates[_holder][_certificateHash].note = _note;
+        
         certificatesCount[_holder]--;
 
-        emit RevokedCertificate(msg.sender, _holder, _certificateHash);
+        emit RevokedCertificate(msg.sender, _holder, _certificateHash, true);
 
         return true;
     }
@@ -147,5 +156,17 @@ contract Certificates {
         address _holder
     ) external view returns (uint256) {
         return certificatesCount[_holder];
+    }
+
+
+    function getCertificatesByList(address user, bytes32[] memory certIds) public view returns (Certificate[] memory) {
+        uint256 length = certIds.length;
+        Certificate[] memory result = new Certificate[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            result[i] = certificates[user][certIds[i]];
+        }
+
+        return result;
     }
 }
