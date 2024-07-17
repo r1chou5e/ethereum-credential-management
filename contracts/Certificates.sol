@@ -2,7 +2,6 @@
 pragma solidity <=0.8.25;
 
 import "./Issuers.sol";
-
 // Uncomment this line to use console.log
 import "hardhat/console.sol";
 
@@ -10,18 +9,18 @@ contract Certificates {
     struct Certificate {
         address holder;
         address issuer;
-        string fileUrl;
-        uint16 score;
+        bytes32 certHash;
+        string ipfsHash;
         uint256 issueDate;
-        uint256 expireDate;
+        string note;
         bool isRevoked;
     }
 
     Issuers private issuers;
     address private revocationConsensusContract;
 
-    mapping(address => mapping(bytes32 => Certificate)) public certificates;
-    mapping(address => uint256) public certificatesCount;
+    mapping(address => mapping(bytes32 => Certificate)) private certificates;
+    mapping(address => uint256) private certificatesCount;
 
     constructor(address _issuerContractAddress) payable {
         issuers = Issuers(_issuerContractAddress);
@@ -30,16 +29,18 @@ contract Certificates {
     event CertificateIssued(
         address indexed _holder,
         address indexed _issuer,
-        string _fileUrl,
+        string _ipfsHash,
+        string _hashInfor,
         uint256 _issueDate,
-        uint256 _expireDate,
+        string _note,
         bytes32 _certificateHash
     );
 
     event RevokedCertificate(
         address indexed _issuer,
         address indexed _holder,
-        bytes32 _certificateHash
+        bytes32 _certificateHash,
+        bool _isRevoked
     );
 
     modifier onlyIssuer() {
@@ -74,12 +75,12 @@ contract Certificates {
 
     function issueCertificate(
         address _holder,
-        string memory _fileUrl,
-        uint16 _score,
-        uint256 _expireDate
+        string memory _ipfsHash,
+        string memory _hashInfor,
+        string memory _note
     ) public onlyIssuer returns (bytes32) {
         bytes32 certificateHash = keccak256(
-            abi.encode(_holder, _fileUrl, _score, block.timestamp, _expireDate)
+            abi.encode(_holder, _ipfsHash, _hashInfor, _note, block.timestamp)
         );
 
         require(
@@ -95,10 +96,10 @@ contract Certificates {
         certificates[_holder][certificateHash] = Certificate(
             _holder,
             msg.sender,
-            _fileUrl,
-            _score,
+            certificateHash,
+            _ipfsHash,
             block.timestamp,
-            _expireDate,
+            _note,
             false
         );
 
@@ -107,9 +108,10 @@ contract Certificates {
         emit CertificateIssued(
             _holder,
             msg.sender,
-            _fileUrl,
+            _ipfsHash,
+            _hashInfor,
             block.timestamp,
-            _expireDate,
+            _note,
             certificateHash
         );
 
@@ -118,17 +120,19 @@ contract Certificates {
 
     function revokeCertificate(
         address _holder,
-        bytes32 _certificateHash
-    ) external onlyRevocationConsensus returns (bool) {
+        bytes32 _certificateHash,
+        string memory _note
+    ) external onlyIssuer returns (bool) {
         require(
             certificates[_holder][_certificateHash].holder != address(0),
             "Certificate does not exist"
         );
 
         certificates[_holder][_certificateHash].isRevoked = true;
+        certificates[_holder][_certificateHash].note = _note;
         certificatesCount[_holder]--;
 
-        emit RevokedCertificate(msg.sender, _holder, _certificateHash);
+        emit RevokedCertificate(msg.sender, _holder, _certificateHash, true);
 
         return true;
     }
@@ -153,5 +157,17 @@ contract Certificates {
         address _holder
     ) external view returns (uint256) {
         return certificatesCount[_holder];
+    }
+
+
+    function getCertificatesByList(address user, bytes32[] memory certIds) public view returns (Certificate[] memory) {
+        uint256 length = certIds.length;
+        Certificate[] memory result = new Certificate[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            result[i] = certificates[user][certIds[i]];
+        }
+
+        return result;
     }
 }
